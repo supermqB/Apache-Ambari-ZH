@@ -24,7 +24,9 @@ var App = require('app');
  * @private
  */
 function _getLabelPathWithoutApp(labelBindingPath) {
-  return labelBindingPath.startsWith('App.') ? labelBindingPath.replace('App.', '') : labelBindingPath;
+  return labelBindingPath.startsWith('App.')
+    ? labelBindingPath.replace('App.', '')
+    : labelBindingPath;
 }
 
 /**
@@ -36,6 +38,8 @@ function _formatLabel(stateName) {
   return stateName.capitalize().replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
+const MENU_ITEMS_TRANS = { Services: '服务', Summary: '汇总', Admin: '管理' };
+
 /**
  * Don't create instances directly
  * Only <code>App.BreadcrumbsView</code>-instance will create them
@@ -43,7 +47,6 @@ function _formatLabel(stateName) {
  * @type {Em.Object}
  */
 App.BreadcrumbItem = Em.Object.extend({
-
   /**
    * String shown as breadcrumb
    *
@@ -129,7 +132,8 @@ App.BreadcrumbItem = Em.Object.extend({
    * @returns {string}
    */
   labelPostFormat: function (label) {
-    return label;
+    console.log('菜单名称：' + label);
+    return MENU_ITEMS_TRANS[label] || label;
   },
 
   transition: function () {
@@ -152,12 +156,12 @@ App.BreadcrumbItem = Em.Object.extend({
     let formattedLabel;
 
     if (labelBindingPath) {
-      formattedLabel = Ember.Handlebars.Utils.escapeExpression(App.get(_getLabelPathWithoutApp(labelBindingPath)));
-    } else{
+      formattedLabel = Ember.Handlebars.Utils.escapeExpression(
+        App.get(_getLabelPathWithoutApp(labelBindingPath))
+      );
+    } else {
       formattedLabel = label;
     }
-
-
 
     this.set('formattedLabel', this.labelPostFormat(formattedLabel));
   },
@@ -175,8 +179,7 @@ App.BreadcrumbItem = Em.Object.extend({
     }
     this.createLabel();
     return this._super(...arguments);
-  }
-
+  },
 });
 
 /**
@@ -186,7 +189,6 @@ App.BreadcrumbItem = Em.Object.extend({
  * @type {Em.View}
  */
 App.BreadcrumbsView = Em.View.extend({
-
   templateName: require('templates/common/breadcrumbs'),
 
   /**
@@ -203,34 +205,45 @@ App.BreadcrumbsView = Em.View.extend({
       if (currentState.breadcrumbs !== undefined) {
         // breadcrumbs should be defined and be not null or any other falsie-value
         if (currentState.breadcrumbs) {
-          const {label, labelBindingPath, route, disabled} = currentState.breadcrumbs;
+          const { label, labelBindingPath, route, disabled } =
+            currentState.breadcrumbs;
           // generate label if it isn't provided
           if (!label && !labelBindingPath) {
             currentState.breadcrumbs.label = _formatLabel(currentState.name);
           }
           // generate route if it isn't provided and breadcrumb is not disabled
           if (!route && !disabled) {
-            currentState.breadcrumbs.route = currentState.absoluteRoute(App.router).replace('/main/', '');
+            currentState.breadcrumbs.route = currentState
+              .absoluteRoute(App.router)
+              .replace('/main/', '');
           }
           items.pushObject(currentState.breadcrumbs);
         }
-      }
-      else {
+      } else {
         // generate breadcrumb if it is not defined
         // breadcrumbs of wizard step such as "Step #" should be ignored
-        if (currentState.name && !['root', 'index'].contains(currentState.name) && !wizardStepRegex.test(currentState.name)) {
-          items.pushObject({label: _formatLabel(currentState.name)});
+        if (
+          currentState.name &&
+          !['root', 'index'].contains(currentState.name) &&
+          !wizardStepRegex.test(currentState.name)
+        ) {
+          items.pushObject({ label: _formatLabel(currentState.name) });
         }
       }
       currentState = currentState.get('parentState');
     }
     items.reverse();
-    items.slice(1).forEach(item => item.label = Ember.Handlebars.Utils.escapeExpression(item.label));
-    items = items.map(item => App.BreadcrumbItem.extend(item).create());
+    items
+      .slice(1)
+      .forEach(
+        (item) =>
+          (item.label = Ember.Handlebars.Utils.escapeExpression(item.label))
+      );
+    items = items.map((item) => App.BreadcrumbItem.extend(item).create());
     if (items.length) {
       items.get('lastObject').setProperties({
         disabled: true,
-        isLast: true
+        isLast: true,
       });
     }
     return items;
@@ -252,6 +265,5 @@ App.BreadcrumbsView = Em.View.extend({
     Em.tryInvoke(item, 'beforeTransition');
     Em.tryInvoke(item, 'transition');
     Em.tryInvoke(item, 'afterTransition');
-  }
-
+  },
 });
